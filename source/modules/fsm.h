@@ -1,7 +1,6 @@
 #include "elevio.h"
 
 typedef enum{
-    INIT,
     IDLE,
     MOVING_UP,
     MOVING_DOWN,
