@@ -1,73 +1,81 @@
-#include <order_logic.h>
+#include "order_logic.h"
+#include "fsm.h"
 
 int hall_up_buttons[4];
 int hall_down_buttons[4];
 int cab_buttons[4];
 
-List destinations;
-list_init(destinations);
+int destinations[4];
 
 void add_orders(){
-    while(1){
-        int current_floor = elevio_floorSensor();
-        for(int floor = 0; floor < N_FLOORS; floor++){
-            for(int button = 0; button < N_BUTTONS; button++){
-                int btnPressed = elevio_callButton(floor, button);
-                if (btnPressed){
-                    if (button == 0){
-                        hall_up_buttons[floor] = 1;
-                    }
-                    if (button == 1){
-                        hall_down_buttons[floor] = 1;
-                    }
-                    if (button == 2){
-                        cab_buttons[floor] = 1;
-                    }
+    for(int floor = 0; floor < N_FLOORS; floor++){
+        for(int button = 0; button < N_BUTTONS; button++){
+            int btnPressed = elevio_callButton(floor, button);
+            if (btnPressed){
+                if (button == 0){
+                    hall_up_buttons[floor] = 1;
+                }
+                if (button == 1){
+                    hall_down_buttons[floor] = 1;
+                }
+                if (button == 2){
+                    cab_buttons[floor] = 1;
                 }
             }
         }
     }
 }
 
-int get_current_direction(){
-    int actual_direction;
-    int current_floor = elevio_floorSensor();
-    if (list_get(&destinations, 0) - current_floor >= 0){
-        int actual_direction = 1;
+void remove_orders(FSM *elevator){
+    if (elevator->state == IDLE){
+        for (int i = 0; i < N_FLOORS; i++){
+            if (elevator->current_floor == i){
+                hall_up_buttons[i] = 0;
+                hall_down_buttons[i] = 0;
+                cab_buttons[i] = 0;
+            }
+        }
     }
-    else{
-        int actual_direction = -1;
-    }
-    return actual_direction;
-
 }
 
-void prioritize_orders(){
-    int current_floor = elevio_floorSensor();
-    int wanted_direction;
-
-    for (int i = 0; i < N_FLOORS; i++){
+void update_destinations(FSM *elevator){
+    for (int i = 0; i < N_FLOORS; i++){ //Går igjennom alle cab bestillinger og legger de til destinations
         if (cab_buttons[i] == 1){
-            list_push_front(&destinations, i);
+            destinations[i] = 1;
         }
+        if (elevator->current_floor == i && destinations[i] == 1 && elevator->state == IDLE){ //Hvis etasjen man stopper i ligger i destinations blir den fjernet
+            destinations[i] = 0;
+        }
+    }
 
-        int current_direction = get_current_direction();
+    int goal = -1;
 
-        if (hall_up_buttons[i] == 1){
-
-            if (i - current_floor >= 0){
-                int wanted_direction = 1;
+    if (elevator->state == MOVING_UP){
+        for (int i = 0; i < N_FLOORS; i++){
+            if (destinations[i] == 1){
+                goal = i;
+                break;
             }
-            else{
-                int wanted_direction = -1;
-            }
-            
-            if (current_direction == wanted_direction && i < abs(list_get(&destinations, 0) - current_floor)){
-                list_push_front(&destinations, i);
-            }
-            else{
-                list_push_back(&destinations, i);
+            if ((elevator->current_floor < i && i < goal) && hall_up_buttons[i] == 1){
+                destinations[i] = 1;
             }
         }
+    }
+
+    if (elevator->state == MOVING_DOWN){
+
+        for (int i = 0; i < N_FLOORS; i++){
+            if (destinations[i] == 1){
+                goal = i;
+                break;
+            }
+            if ((elevator->current_floor > i && i > goal) && hall_down_buttons[i] == 1){
+                destinations[i] = 1;
+            }
+        }
+    }
+    
+    for (int i = 0; i < N_FLOORS; i++){
+        elevator->destinations[i] = destinations[i];
     }
 }

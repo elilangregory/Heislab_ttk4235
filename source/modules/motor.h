@@ -3,7 +3,9 @@
 #include <signal.h>
 #include <time.h>
 
-
 #include "../driver/elevio.h"
+#include "fsm.h"
 
-void initialize_floor();
+void new_destination(FSM *elevator);
+
+void stop_at_boundries(FSM *elevator);

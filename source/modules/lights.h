@@ -3,9 +3,10 @@
 #include <signal.h>
 #include <time.h>
 
-#include "driver/elevio.h"
-#include "order_logic.h"
+#include "../driver/elevio.h"
+#include "fsm.h"
 
 void ignite_stop();
 void ignite_floor_indicator();
-void ignite_elevator_panel();
+void open_and_close_doors(FSM *elevator);
+void ignite_elevator_panel(FSM *elevator);
