@@ -4,7 +4,6 @@
 #include "order_logic.h"
 
 typedef enum{
-    INIT,
     IDLE,
     MOVING_UP,
     MOVING_DOWN,
